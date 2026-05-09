@@ -4,8 +4,11 @@
 #include <argos3/core/simulator/loop_functions.h>
 #include <argos3/plugins/robots/foot-bot/simulator/footbot_entity.h>
 #include <argos3/core/simulator/entity/floor_entity.h>
+#include <source/DCPFA/DecentralizedPheromone.h>
 #include <source/DCPFA/DCPFA_controller.h>
 #include <argos3/plugins/simulator/entities/cylinder_entity.h>
+#include <fstream>
+#include <string>
 
 using namespace argos;
 using namespace std;
@@ -110,6 +113,8 @@ class DCPFA_loop_functions : public argos::CLoopFunctions
 		argos::Real CommunicationPeriodSeconds;
 		size_t MaxPheromonesPerRobot;
 		size_t DebugCommunication;
+		std::string CommunicationLogPath;
+		std::ofstream CommunicationLog;
 
 		/* physical robot & world variables */
 		argos::Real FoodRadius;
@@ -144,6 +149,16 @@ class DCPFA_loop_functions : public argos::CLoopFunctions
 		void RandomFoodDistribution();
 		void ClusterFoodDistribution();
 		void PowerLawFoodDistribution();
+		void LogCommunicationEvent(argos::Real sim_time,
+								   const std::string& sender_id,
+								   const std::string& receiver_id,
+								   argos::Real distance,
+								   bool accepted,
+								   const std::string& event_type,
+								   const DecentralizedPheromone& pheromone,
+								   size_t sender_cache_size,
+								   size_t receiver_cache_size_before,
+								   size_t receiver_cache_size_after);
                 bool IsOutOfBounds(argos::CVector2 p, size_t length, size_t width);
 		bool IsCollidingWithNest(argos::CVector2 p);
 		bool IsCollidingWithFood(argos::CVector2 p);

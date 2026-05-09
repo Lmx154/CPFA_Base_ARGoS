@@ -1,5 +1,7 @@
 #include "DCPFA_loop_functions.h"
 
+#include <sys/stat.h>
+
 DCPFA_loop_functions::DCPFA_loop_functions() :
 	RNG(argos::CRandom::CreateRNG("argos")),
         SimTime(0),
@@ -38,6 +40,7 @@ DCPFA_loop_functions::DCPFA_loop_functions() :
 	CommunicationPeriodSeconds(0.5),
 	MaxPheromonesPerRobot(128),
 	DebugCommunication(0),
+	CommunicationLogPath("results/dcpfa_mvp/logs/communication_events.csv"),
 	FoodRadius(0.05),
 	FoodRadiusSquared(0.0025),
 	NestRadius(0.12),
@@ -71,8 +74,18 @@ void DCPFA_loop_functions::Init(argos::TConfigurationNode &node) {
 		argos::GetNodeAttributeOrDefault(communication_node, "CommunicationPeriodSeconds", CommunicationPeriodSeconds, CommunicationPeriodSeconds);
 		argos::GetNodeAttributeOrDefault(communication_node, "MaxPheromonesPerRobot", MaxPheromonesPerRobot, MaxPheromonesPerRobot);
 		argos::GetNodeAttributeOrDefault(communication_node, "DebugCommunication", DebugCommunication, DebugCommunication);
+		argos::GetNodeAttributeOrDefault(communication_node, "CommunicationLogPath", CommunicationLogPath, CommunicationLogPath);
 	}
 	CommunicationRadiusSquared = CommunicationRadius * CommunicationRadius;
+	if(DebugCommunication != 0 && !CommunicationLogPath.empty()) {
+		mkdir("results", 0775);
+		mkdir("results/dcpfa_mvp", 0775);
+		mkdir("results/dcpfa_mvp/logs", 0775);
+		CommunicationLog.open(CommunicationLogPath.c_str(), std::ios::out);
+		CommunicationLog << "sim_time_s,sender_id,receiver_id,distance_m,accepted,event_type,"
+						 << "pheromone_id,origin_robot_id,hop_count,sender_cache_size,"
+						 << "receiver_cache_size_before,receiver_cache_size_after\n";
+	}
 
 	UninformedSearchVariation = ToRadians(USV_InDegrees);
 	argos::TConfigurationNode settings_node = argos::GetNode(node, "settings");
@@ -393,10 +406,75 @@ void DCPFA_loop_functions::DecentralizedCommunicationStep() {
 				j_messages[msg].hop_count++;
 			}
 
-			controllers[i]->ReceivePheromones(j_messages);
-			controllers[j]->ReceivePheromones(i_messages);
+			const argos::Real distance = offset.Length();
+			const std::string sender_i = controllers[i]->GetId();
+			const std::string sender_j = controllers[j]->GetId();
+			const size_t i_cache_size = controllers[i]->GetPheromoneMemorySize();
+			const size_t j_cache_size = controllers[j]->GetPheromoneMemorySize();
+
+			for(size_t msg = 0; msg < i_messages.size(); ++msg) {
+				const size_t receiver_cache_before = controllers[j]->GetPheromoneMemorySize();
+				std::vector<DecentralizedPheromone> single_message(1, i_messages[msg]);
+				const bool accepted = controllers[j]->ReceivePheromones(single_message) > 0;
+				const size_t receiver_cache_after = controllers[j]->GetPheromoneMemorySize();
+				LogCommunicationEvent(current_time,
+									  sender_i,
+									  sender_j,
+									  distance,
+									  accepted,
+									  i_messages[msg].origin_robot_id == sender_i ? "direct" : "relay",
+									  i_messages[msg],
+									  i_cache_size,
+									  receiver_cache_before,
+									  receiver_cache_after);
+			}
+
+			for(size_t msg = 0; msg < j_messages.size(); ++msg) {
+				const size_t receiver_cache_before = controllers[i]->GetPheromoneMemorySize();
+				std::vector<DecentralizedPheromone> single_message(1, j_messages[msg]);
+				const bool accepted = controllers[i]->ReceivePheromones(single_message) > 0;
+				const size_t receiver_cache_after = controllers[i]->GetPheromoneMemorySize();
+				LogCommunicationEvent(current_time,
+									  sender_j,
+									  sender_i,
+									  distance,
+									  accepted,
+									  j_messages[msg].origin_robot_id == sender_j ? "direct" : "relay",
+									  j_messages[msg],
+									  j_cache_size,
+									  receiver_cache_before,
+									  receiver_cache_after);
+			}
 		}
 	}
+}
+
+void DCPFA_loop_functions::LogCommunicationEvent(argos::Real sim_time,
+												 const std::string& sender_id,
+												 const std::string& receiver_id,
+												 argos::Real distance,
+												 bool accepted,
+												 const std::string& event_type,
+												 const DecentralizedPheromone& pheromone,
+												 size_t sender_cache_size,
+												 size_t receiver_cache_size_before,
+												 size_t receiver_cache_size_after) {
+	if(DebugCommunication == 0 || !CommunicationLog.is_open()) {
+		return;
+	}
+
+	CommunicationLog << sim_time << ','
+					 << sender_id << ','
+					 << receiver_id << ','
+					 << distance << ','
+					 << (accepted ? 1 : 0) << ','
+					 << event_type << ','
+					 << pheromone.id << ','
+					 << pheromone.origin_robot_id << ','
+					 << pheromone.hop_count << ','
+					 << sender_cache_size << ','
+					 << receiver_cache_size_before << ','
+					 << receiver_cache_size_after << '\n';
 }
 
 void DCPFA_loop_functions::SetFoodDistribution() {

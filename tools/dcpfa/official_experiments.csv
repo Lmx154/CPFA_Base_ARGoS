@@ -1,0 +1,7 @@
+algorithm,distribution,xml,trials
+CPFA,Random,experiments/dcpfa_mvp/CPFA_Baseline_Random_24r_256tags_10x10.xml,50
+CPFA,Powerlaw,experiments/dcpfa_mvp/CPFA_Baseline_Powerlaw_24r_256tags_10x10.xml,50
+CPFA,Clustered,experiments/dcpfa_mvp/CPFA_Baseline_Clustered_24r_256tags_10x10.xml,50
+DCPFA,Random,experiments/dcpfa_mvp/DCPFA_Random_24r_256tags_10x10.xml,50
+DCPFA,Powerlaw,experiments/dcpfa_mvp/DCPFA_Powerlaw_24r_256tags_10x10.xml,50
+DCPFA,Clustered,experiments/dcpfa_mvp/DCPFA_Clustered_24r_256tags_10x10.xml,50
