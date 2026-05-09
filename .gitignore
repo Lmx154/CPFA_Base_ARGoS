@@ -1,0 +1,21 @@
+# CMake build output
+/build/
+/source/CPFA/build/
+/source/ga-mpi/CMakeFiles/
+/source/ga-mpi/CMakeCache.txt
+/source/ga-mpi/Makefile
+/source/ga-mpi/cmake_install.cmake
+
+# Compiled artifacts
+*.o
+*.o.d
+*.so
+*.a
+*.d
+
+# Python cache files
+__pycache__/
+*.py[cod]
+
+# Local simulation output
+/results/

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.12)
+cmake_minimum_required(VERSION 3.10)
 project(CPFA-ARGoS)
 
 # For verbose output
@@ -20,6 +20,7 @@ endif()
 # Set the path where CMake will find additional scripts.
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/cmake)
 set(CMAKE_PREFIX_PATH $ENV{CMAKE_PREFIX_PATH} ${CMAKE_SOURCE_DIR}/cmake)
+set(OpenGL_GL_PREFERENCE "LEGACY")
 
 # Use C++17
 set(CMAKE_CXX_STANDARD 17)
